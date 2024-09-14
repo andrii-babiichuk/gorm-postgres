@@ -1,4 +1,4 @@
-module gorm.io/driver/postgres
+module github.com/andrii-babiichuk/gorm-postgres
 
 go 1.19
 
@@ -8,5 +8,3 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 )
-
-retract v1.5.5 // Published accidentally.
