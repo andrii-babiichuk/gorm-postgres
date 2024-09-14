@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/stdlib"
 	"gorm.io/gorm"
 	"gorm.io/gorm/callbacks"
 	"gorm.io/gorm/clause"
@@ -31,7 +29,6 @@ type Config struct {
 }
 
 var (
-	timeZoneMatcher         = regexp.MustCompile("(time_zone|TimeZone)=(.*?)($|&| )")
 	defaultIdentifierLength = 63 //maximum identifier length for postgres
 )
 
@@ -86,23 +83,8 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 
 	if dialector.Conn != nil {
 		db.ConnPool = dialector.Conn
-	} else if dialector.DriverName != "" {
-		db.ConnPool, err = sql.Open(dialector.DriverName, dialector.Config.DSN)
 	} else {
-		var config *pgx.ConnConfig
-
-		config, err = pgx.ParseConfig(dialector.Config.DSN)
-		if err != nil {
-			return
-		}
-		if dialector.Config.PreferSimpleProtocol {
-			config.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
-		}
-		result := timeZoneMatcher.FindStringSubmatch(dialector.Config.DSN)
-		if len(result) > 2 {
-			config.RuntimeParams["timezone"] = result[2]
-		}
-		db.ConnPool = stdlib.OpenDB(*config)
+		db.ConnPool, err = sql.Open(dialector.DriverName, dialector.Config.DSN)
 	}
 	return
 }
@@ -121,15 +103,7 @@ func (dialector Dialector) DefaultValueOf(field *schema.Field) clause.Expression
 
 func (dialector Dialector) BindVarTo(writer clause.Writer, stmt *gorm.Statement, v interface{}) {
 	writer.WriteByte('$')
-	index := 0
-	varLen := len(stmt.Vars)
-	if varLen > 0 {
-		switch stmt.Vars[0].(type) {
-		case pgx.QueryExecMode:
-			index++
-		}
-	}
-	writer.WriteString(strconv.Itoa(varLen - index))
+	writer.WriteString(strconv.Itoa(len(stmt.Vars)))
 }
 
 func (dialector Dialector) QuoteTo(writer clause.Writer, str string) {
